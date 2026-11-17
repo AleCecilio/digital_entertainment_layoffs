@@ -1,0 +1,23 @@
+# Variáveis de ambiente e segredos
+.env
+.env.*
+
+# Ambientes virtuais Python
+.venv/
+venv/
+env/
+
+# Cache e compilados do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Checkpoints do Jupyter Notebook
+.ipynb_checkpoints/
+
+# Arquivos temporários de sistema e IDEs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
