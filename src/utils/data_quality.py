@@ -168,3 +168,91 @@ def check_data_quality(
         .sort_values('Incidência (%)', ascending=False)
         .round(2)
     )
+
+
+# =====================================================================
+# AUDITORIA DE DUPLICIDADES PARCIAIS (MESMA EMPRESA + DATA)
+# =====================================================================
+
+def inspect_partial_duplicates(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Agrupa registros com mesma empresa e mesma data em 1 linha comparativa
+    e classifica o tipo de conflito para decisão de limpeza.
+    """
+    required = {
+        'company', 
+        'date', 
+        'location', 
+        'total_laid_off', 
+        'percentage_laid_off', 
+        'industry'
+    }
+
+    if not required.issubset(df.columns):
+        missing = required - set(df.columns)
+        raise ValueError(f"Colunas obrigatórias ausentes para auditoria: {missing}")
+
+    dup_mask = df.duplicated(subset=['company', 'date'], keep=False)
+
+    if not dup_mask.any():
+        return pd.DataFrame(columns=[
+            'company', 'date', 'qtd_linhas', 'cidades',
+            'demitidos', 'percentual', 'setor', 'diagnostico', 'status'
+        ])
+
+    resumo = (
+        df[dup_mask]
+        .groupby(['company', 'date'], as_index=False)
+        .agg(
+            qtd_linhas=('company', 'count'),
+            cidades=('location', lambda s: ' vs '.join(s.fillna('NaN').unique())),
+            demitidos=(
+                'total_laid_off',
+                lambda s: ' vs '
+                .join(
+                    s.fillna(-1)
+                    .astype(int)
+                    .astype(str)
+                    .unique()
+                )
+                .replace('-1', 'NaN')
+            ),
+            percentual=(
+                'percentage_laid_off',
+                lambda s: ' vs '
+                .join(
+                    s.round(4)
+                    .fillna(-1)
+                    .astype(str)
+                    .unique()
+                )
+                .replace('-1.0', 'NaN')
+            ),
+            setor=('industry', 'first')
+        )
+    )
+
+    def _classificar(row: pd.Series) -> tuple[str, str]:
+
+        if ' vs ' in row['cidades']:
+            return (
+                'Cidades diferentes (Manter)', 
+                '🟢 Cidades diferentes (Manter)'
+            )
+        
+        if ' vs ' not in row['demitidos'] and ' vs ' not in row['percentual']:
+            return (
+                'Duplicata exata (Remover)', 
+                '🔴 Duplicata exata (Remover)'
+            )
+        
+        return (
+            'Mesma cidade / dados divergentes', 
+            '🟡 Mesma cidade / dados divergentes'
+        )
+
+    classificacoes = resumo.apply(_classificar, axis=1)
+    resumo['diagnostico'] = [c[0] for c in classificacoes]
+    resumo['status'] = [c[1] for c in classificacoes]
+
+    return resumo.sort_values('status').reset_index(drop=True)

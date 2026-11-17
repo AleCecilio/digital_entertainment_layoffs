@@ -105,3 +105,80 @@ def chart_data_quality(
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
 
     plt.show()
+
+    
+
+# ===== Barplot Horizontal de Classificação de Duplicidades Parciais =====
+
+def chart_partial_duplicates(
+    df_resumo: pd.DataFrame,
+    tamanho_figura: tuple[float, float] = (9, 3.0),
+    polegadas: int = 150,
+    nome_dataframe: str | None = None,
+    save_path: str | None = None
+) -> None:
+    """
+    Gera um barplot horizontal resumindo a classificação dos grupos de
+    duplicidade parcial (saída de inspect_partial_duplicates).
+    """
+    if df_resumo.empty:
+        print("Nenhuma duplicidade parcial encontrada para plotar.")
+        return
+
+    contagem = (
+        df_resumo['diagnostico']
+        .value_counts()
+        .reset_index()
+    )
+    contagem.columns = ['diagnostico', 'Quantidade']
+    contagem['Incidência (%)'] = (contagem['Quantidade'] / len(df_resumo)) * 100
+
+    paleta_semantica = {
+        'Duplicata exata (Remover)': '#D90429',
+        'Mesma cidade / dados divergentes': '#F4A261',
+        'Cidades diferentes (Manter)': '#2A9D8F'
+    }
+
+    plt.figure(figsize=tamanho_figura, dpi=polegadas)
+    plt.gca().set_axisbelow(True)
+    plt.grid(axis='x', linestyle='--', alpha=0.4, color='#9A8C98')
+
+    ax = sns.barplot(
+        x='Quantidade',
+        y='diagnostico',
+        data=contagem,
+        hue='diagnostico',
+        palette=paleta_semantica,
+        legend=False,
+        width=0.55
+    )
+
+    labels = [
+        f"{int(qtd)} grupos ({pct:.1f}%)"
+        for qtd, pct in zip(contagem['Quantidade'], contagem['Incidência (%)'])
+    ]
+
+    if len(ax.containers) == 1:
+        ax.bar_label(ax.containers[0], labels=labels, padding=6, fontsize=9.5, fontweight='bold', color='#2B2D42')
+    else:
+        for container, lbl in zip(ax.containers, labels):
+            ax.bar_label(container, labels=[lbl], padding=6, fontsize=9.5, fontweight='bold', color='#2B2D42')
+
+    titulo = (
+        f'Diagnóstico de Duplicidades Parciais — {nome_dataframe}'
+        if nome_dataframe
+        else 'Diagnóstico de Duplicidades Parciais (Empresa + Data)'
+    )
+
+    plt.title(titulo, fontsize=13, fontweight='bold', color='#2B2D42', pad=16)
+    plt.xlabel('Quantidade de Grupos Suspeitos', fontsize=10.5, fontweight='bold', color='#4A4E69')
+    plt.ylabel('Classificação', fontsize=10.5, fontweight='bold', color='#4A4E69')
+    plt.xlim(0, contagem['Quantidade'].max() * 1.32)
+
+    sns.despine(left=True, bottom=True)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+
+    plt.show()
