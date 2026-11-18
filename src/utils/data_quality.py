@@ -1,169 +1,364 @@
+
+import numpy as np
 import pandas as pd
 
+
 # =====================================================================
-# FUNÇÕES AUXILIARES — cada uma retorna uma Série com sufixo no índice
+# FUNÇÕES AUXILIARES — DIAGNÓSTICO DE QUALIDADE DOS DADOS
 # =====================================================================
 
 def _data_missing_nan(df: pd.DataFrame) -> pd.Series:
-    """Conta a quantidade de valores nulos (NaN/None) reais no DataFrame."""
-    n = df.isna().sum()
-    n.index = n.index + ' (Nulos/NaN)'
-    return n
+    """
+    Conta os valores nulos reais do DataFrame.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de valores nulos por coluna.
+    """
+    counts = df.isna().sum()
+    counts.index = counts.index + ' (Nulos/NaN)'
+    return counts
 
 
 def _data_missing_numeric(df: pd.DataFrame) -> pd.Series:
-    """Identifica e conta valores iguais a zero numéricos (int/float)."""
-    n = (df.select_dtypes(include='number') == 0).sum()
-    n.index = n.index + ' (Valores Zero)'
-    return n
+    """
+    Conta os valores numéricos iguais a zero.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de zeros numéricos por coluna.
+    """
+    numeric_columns = df.select_dtypes(include='number')
+    counts = (numeric_columns == 0).sum()
+    counts.index = counts.index + ' (Valores Zero)'
+    return counts
 
 
 def _data_missing_numeric_obj(df: pd.DataFrame) -> pd.Series:
-    """Identifica e conta valores iguais a '0' armazenados como texto."""
-    str_cols = df.select_dtypes(include=['object', 'string']).columns
-    if len(str_cols) == 0:
+    """
+    Conta os valores iguais a '0' armazenados como texto.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de zeros textuais por coluna.
+    """
+    string_columns = df.select_dtypes(
+        include=['object', 'string']
+    ).columns
+
+    if len(string_columns) == 0:
         return pd.Series(dtype='int64')
-    n = df[str_cols].apply(lambda x: x.dropna().astype(str).str.strip() == '0').sum()
-    n.index = n.index + ' (Zeros em Texto)'
-    return n
+
+    counts = df[string_columns].apply(
+        lambda series: (
+            series.dropna().astype(str).str.strip() == '0'
+        ).sum()
+    )
+
+    counts.index = counts.index + ' (Zeros em Texto)'
+    return counts
 
 
 def _data_missing_datetime(df: pd.DataFrame) -> pd.Series:
-    """Verifica valores nulos (NaT) especificamente em colunas de data e hora."""
-    dt_cols = df.select_dtypes(include=['datetime', 'datetime64']).columns
-    if len(dt_cols) == 0:
+    """
+    Conta os valores ausentes em colunas de data e hora.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de valores ausentes por coluna temporal.
+    """
+    datetime_columns = df.select_dtypes(
+        include=['datetime', 'datetime64']
+    ).columns
+
+    if len(datetime_columns) == 0:
         return pd.Series(dtype='int64')
-    n = df[dt_cols].isna().sum()
-    n.index = n.index + ' (Datas Inválidas/NaT)'
-    return n
+
+    counts = df[datetime_columns].isna().sum()
+    counts.index = counts.index + ' (Datas Inválidas/NaT)'
+    return counts
 
 
 def _data_missing_empty_strings(df: pd.DataFrame) -> pd.Series:
-    """Procura por strings vazias ou compostas apenas por espaços em branco."""
-    str_cols = df.select_dtypes(include=['object', 'string']).columns
-    if len(str_cols) == 0:
+    """
+    Conta strings vazias ou compostas apenas por espaços em branco.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de strings vazias por coluna textual.
+    """
+    string_columns = df.select_dtypes(
+        include=['object', 'string']
+    ).columns
+
+    if len(string_columns) == 0:
         return pd.Series(dtype='int64')
-    n = df[str_cols].apply(lambda x: x.dropna().astype(str).str.strip() == '').sum()
-    n.index = n.index + ' (Strings Vazias/Espaços)'
-    return n
+
+    counts = df[string_columns].apply(
+        lambda series: (
+            series.dropna().astype(str).str.strip() == ''
+        ).sum()
+    )
+
+    counts.index = counts.index + ' (Strings Vazias/Espaços)'
+    return counts
 
 
 def _data_negative_numeric(df: pd.DataFrame) -> pd.Series:
-    """Busca valores negativos inválidos (ex: demissões ou capital < 0)."""
-    n = (df.select_dtypes(include='number') < 0).sum()
-    n.index = n.index + ' (Valores Negativos)'
-    return n
+    """
+    Conta valores numéricos negativos.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de valores negativos por coluna.
+    """
+    numeric_columns = df.select_dtypes(include='number')
+    counts = (numeric_columns < 0).sum()
+    counts.index = counts.index + ' (Valores Negativos)'
+    return counts
 
 
 def _data_duplicates(df: pd.DataFrame) -> pd.Series:
-    """Busca linhas 100% idênticas na tabela."""
-    dup_count = df.duplicated().sum()
-    if dup_count > 0:
-        return pd.Series([dup_count], index=['Linhas Duplicadas (100% Idênticas)'])
+    """
+    Conta linhas integralmente duplicadas.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de duplicatas exatas, caso existam.
+    """
+    duplicate_count = df.duplicated().sum()
+
+    if duplicate_count > 0:
+        return pd.Series(
+            [duplicate_count],
+            index=['Linhas Duplicadas (100% Idênticas)']
+        )
+
     return pd.Series(dtype='int64')
 
 
 def _data_partial_duplicates(df: pd.DataFrame) -> pd.Series:
-    """Verifica eventos duplicados para a mesma empresa na mesma data."""
-    if all(c in df.columns for c in ['company', 'date']):
-        partial_dup = df.duplicated(subset=['company', 'date']).sum()
-        if partial_dup > 0:
-            return pd.Series([partial_dup], index=['Duplicidade Parcial (Mesma Empresa + Data)'])
+    """
+    Conta registros repetidos para a mesma empresa e data.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de duplicatas parciais, caso existam.
+    """
+    required_columns = ['company', 'date']
+
+    if all(column in df.columns for column in required_columns):
+        duplicate_count = df.duplicated(
+            subset=required_columns
+        ).sum()
+
+        if duplicate_count > 0:
+            return pd.Series(
+                [duplicate_count],
+                index=['Duplicidade Parcial (Mesma Empresa + Data)']
+            )
+
     return pd.Series(dtype='int64')
 
 
 def _data_invalid_percentage(df: pd.DataFrame) -> pd.Series:
-    """Valida se percentage_laid_off está fora do intervalo lógico [0.0, 1.0]."""
-    if 'percentage_laid_off' in df.columns:
-        invalid_pct = (
-            (df['percentage_laid_off'] < 0) | (df['percentage_laid_off'] > 1.0)
-        ).sum()
-        if invalid_pct > 0:
-            return pd.Series([invalid_pct], index=['percentage_laid_off Fora de [0, 1]'])
+    """
+    Conta percentuais de demissões fora do intervalo de 0 a 1.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de percentuais inválidos, caso existam.
+    """
+    column = 'percentage_laid_off'
+
+    if column in df.columns:
+        invalid_mask = (
+            (df[column] < 0) | (df[column] > 1.0)
+        )
+        invalid_count = invalid_mask.sum()
+
+        if invalid_count > 0:
+            return pd.Series(
+                [invalid_count],
+                index=['percentage_laid_off Fora de [0, 1]']
+            )
+
     return pd.Series(dtype='int64')
 
 
 def _data_inconsistent_dates(df: pd.DataFrame) -> pd.Series:
-    """Verifica se a data do layoff é posterior à data de registro (date > date_added)."""
-    if all(c in df.columns for c in ['date', 'date_added']):
-        if pd.api.types.is_datetime64_any_dtype(df['date']) and pd.api.types.is_datetime64_any_dtype(df['date_added']):
-            inconsistent = (df['date'] > df['date_added']).sum()
-            if inconsistent > 0:
-                return pd.Series([inconsistent], index=['Data do Evento > Data de Cadastro'])
+    """
+    Conta datas de eventos posteriores às respectivas datas de cadastro.
+
+    Parâmetros:
+        df: DataFrame que será analisado.
+
+    Retorno:
+        Série com a quantidade de datas inconsistentes, caso existam.
+    """
+    required_columns = ['date', 'date_added']
+
+    if not all(column in df.columns for column in required_columns):
+        return pd.Series(dtype='int64')
+
+    date_column = df['date']
+    registration_column = df['date_added']
+
+    if (
+        pd.api.types.is_datetime64_any_dtype(date_column)
+        and pd.api.types.is_datetime64_any_dtype(registration_column)
+    ):
+        invalid_mask = date_column > registration_column
+        invalid_count = invalid_mask.sum()
+
+        if invalid_count > 0:
+            return pd.Series(
+                [invalid_count],
+                index=['Data do Evento > Data de Cadastro']
+            )
+
     return pd.Series(dtype='int64')
 
 
 # =====================================================================
-# MAPA: tipo (string) -> função correspondente
+# REGISTRO DAS ROTINAS DE DIAGNÓSTICO
 # =====================================================================
-_TIPOS_MISSING = {
-    'nan':                _data_missing_nan,
-    'numeric':            _data_missing_numeric,
-    'numeric_obj':        _data_missing_numeric_obj,
-    'datetime':           _data_missing_datetime,
-    'empty_str':          _data_missing_empty_strings,
-    'negatives':          _data_negative_numeric,
-    'duplicates':         _data_duplicates,
+
+_MISSING_CHECKS = {
+    'nan': _data_missing_nan,
+    'numeric': _data_missing_numeric,
+    'numeric_obj': _data_missing_numeric_obj,
+    'datetime': _data_missing_datetime,
+    'empty_str': _data_missing_empty_strings,
+    'negatives': _data_negative_numeric,
+    'duplicates': _data_duplicates,
     'partial_duplicates': _data_partial_duplicates,
-    'invalid_pct':        _data_invalid_percentage,
+    'invalid_pct': _data_invalid_percentage,
     'inconsistent_dates': _data_inconsistent_dates,
 }
 
-_TIPOS_DEFAULT = [
-    'nan', 'numeric', 'numeric_obj', 'datetime', 'empty_str',
-    'negatives', 'duplicates', 'partial_duplicates',
-    'invalid_pct', 'inconsistent_dates'
+_DEFAULT_CHECKS = [
+    'nan',
+    'numeric',
+    'numeric_obj',
+    'datetime',
+    'empty_str',
+    'negatives',
+    'duplicates',
+    'partial_duplicates',
+    'invalid_pct',
+    'inconsistent_dates',
 ]
 
 
 # =====================================================================
-# FUNÇÃO PRINCIPAL — DATA QUALITY
+# FUNÇÃO PRINCIPAL — DIAGNÓSTICO DE QUALIDADE
 # =====================================================================
 
 def check_data_quality(
     df: pd.DataFrame,
-    tipos: list[str] | None = None,
-    ignorar_zeros_em: list[str] | None = None
+    types: list[str] | None = None,
+    ignore_zeros_in: list[str] | None = None
 ) -> pd.DataFrame:
     """
-    Gera um DataFrame de diagnóstico de qualidade destacando valores nulos,
-    incidência de zeros, duplicatas exatas/parciais e anomalias de domínio (Layoffs.fyi).
-    """
-    if tipos is None:
-        tipos = _TIPOS_DEFAULT
-    if ignorar_zeros_em is None:
-        ignorar_zeros_em = []
+    Gera um relatório de qualidade dos dados com as anomalias encontradas.
 
-    tipos_invalidos = [t for t in tipos if t not in _TIPOS_MISSING]
-    if tipos_invalidos:
-        raise ValueError(f"Tipos inválidos: {tipos_invalidos}. Use: {list(_TIPOS_MISSING.keys())}")
+    Parâmetros:
+        df: DataFrame que será auditado.
+        types: Lista dos identificadores das verificações desejadas.
+            Se None, executa todas as verificações disponíveis.
+        ignore_zeros_in: Lista de colunas cujos zeros numéricos devem
+            ser desconsiderados no relatório.
+
+    Retorno:
+        DataFrame com a quantidade e a incidência percentual de cada
+        anomalia encontrada. Se nenhuma for encontrada, retorna uma
+        tabela vazia com as colunas esperadas.
+
+    Observações:
+        A incidência é calculada em relação ao total de linhas do DataFrame.
+        Os percentuais podem somar mais de 100%, pois uma mesma linha pode
+        apresentar diferentes tipos de anomalia.
+    """
+    if types is None:
+        types = _DEFAULT_CHECKS.copy()
+
+    if ignore_zeros_in is None:
+        ignore_zeros_in = []
+
+    invalid_types = [
+        check_type
+        for check_type in types
+        if check_type not in _MISSING_CHECKS
+    ]
+
+    if invalid_types:
+        raise ValueError(
+            f"Tipos inválidos: {invalid_types}. "
+            f"Use: {list(_MISSING_CHECKS.keys())}"
+        )
 
     series_list = []
 
-    for t in tipos:
-        s = _TIPOS_MISSING[t](df)
+    for check_type in types:
+        result = _MISSING_CHECKS[check_type](df)
 
-        if t == 'numeric' and ignorar_zeros_em and not s.empty:
-            indices_para_remover = [col + ' (Valores Zero)' for col in ignorar_zeros_em]
-            s = s[~s.index.isin(indices_para_remover)]
+        if (
+            check_type == 'numeric'
+            and ignore_zeros_in
+            and not result.empty
+        ):
+            excluded_indices = [
+                f'{column} (Valores Zero)'
+                for column in ignore_zeros_in
+            ]
 
-        series_list.append(s)
+            result = result[
+                ~result.index.isin(excluded_indices)
+            ]
 
-    series_list = [s for s in series_list if not s.empty]
+        series_list.append(result)
+
+    series_list = [
+        result for result in series_list
+        if not result.empty
+    ]
+
+    empty_columns = ['Quantidade', 'Incidência (%)']
 
     if not series_list:
-        return pd.DataFrame(columns=['Quantidade', 'Incidência (%)'])
+        return pd.DataFrame(columns=empty_columns)
 
-    resumo_bruto = pd.concat(series_list)
-    resumo_filtrado = resumo_bruto[resumo_bruto > 0]
+    raw_summary = pd.concat(series_list)
+    filtered_summary = raw_summary[raw_summary > 0]
 
-    if resumo_filtrado.empty:
-        return pd.DataFrame(columns=['Quantidade', 'Incidência (%)'])
+    if filtered_summary.empty:
+        return pd.DataFrame(columns=empty_columns)
 
     return (
         pd.DataFrame({
-            'Quantidade':     resumo_filtrado,
-            'Incidência (%)': (resumo_filtrado / len(df)) * 100
+            'Quantidade': filtered_summary,
+            'Incidência (%)': (
+                filtered_summary / len(df)
+            ) * 100
         })
         .sort_values('Incidência (%)', ascending=False)
         .round(2)
@@ -171,88 +366,244 @@ def check_data_quality(
 
 
 # =====================================================================
-# AUDITORIA DE DUPLICIDADES PARCIAIS (MESMA EMPRESA + DATA)
+# AUDITORIA DE DUPLICIDADES PARCIAIS — EMPRESA + DATA
 # =====================================================================
 
 def inspect_partial_duplicates(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Agrupa registros com mesma empresa e mesma data em 1 linha comparativa
-    e classifica o tipo de conflito para decisão de limpeza.
+    Agrupa registros da mesma empresa e data e classifica os conflitos.
+
+    Parâmetros:
+        df: DataFrame que será auditado. Deve conter as colunas company,
+            date, location, total_laid_off, percentage_laid_off e industry.
+
+    Retorno:
+        DataFrame com os registros agrupados, os dados comparados,
+        o diagnóstico e o status sugerido para a limpeza.
+
+    Observações:
+        Registros de uma mesma empresa e data em cidades diferentes
+        são classificados como casos a manter. Os demais grupos são
+        classificados conforme a igualdade ou divergência das métricas.
     """
-    required = {
-        'company', 
-        'date', 
-        'location', 
-        'total_laid_off', 
-        'percentage_laid_off', 
-        'industry'
+    required_columns = {
+        'company',
+        'date',
+        'location',
+        'total_laid_off',
+        'percentage_laid_off',
+        'industry',
     }
 
-    if not required.issubset(df.columns):
-        missing = required - set(df.columns)
-        raise ValueError(f"Colunas obrigatórias ausentes para auditoria: {missing}")
+    if not required_columns.issubset(df.columns):
+        missing_columns = required_columns - set(df.columns)
 
-    dup_mask = df.duplicated(subset=['company', 'date'], keep=False)
+        raise ValueError(
+            'Colunas obrigatórias ausentes para auditoria: '
+            f'{sorted(missing_columns)}'
+        )
 
-    if not dup_mask.any():
-        return pd.DataFrame(columns=[
-            'company', 'date', 'qtd_linhas', 'cidades',
-            'demitidos', 'percentual', 'setor', 'diagnostico', 'status'
-        ])
+    duplicate_mask = df.duplicated(
+        subset=['company', 'date'],
+        keep=False
+    )
 
-    resumo = (
-        df[dup_mask]
+    empty_columns = [
+        'company',
+        'date',
+        'qtd_linhas',
+        'cidades',
+        'demitidos',
+        'percentual',
+        'setor',
+        'diagnostico',
+        'status',
+    ]
+
+    if not duplicate_mask.any():
+        return pd.DataFrame(columns=empty_columns)
+
+    duplicate_data = df.loc[duplicate_mask]
+
+    def _format_unique_values(
+        series: pd.Series,
+        decimals: int | None = None
+    ) -> str:
+        """Formata valores distintos para facilitar a comparação."""
+        unique_values = series.drop_duplicates().tolist()
+        formatted_values = []
+
+        for value in unique_values:
+            if pd.isna(value):
+                formatted_values.append('NaN')
+            elif decimals is not None:
+                formatted_values.append(
+                    f'{value:.{decimals}f}'
+                )
+            elif isinstance(value, (int, np.integer)):
+                formatted_values.append(str(value))
+            elif isinstance(value, (float, np.floating)) and value.is_integer():
+                formatted_values.append(str(int(value)))
+            else:
+                formatted_values.append(str(value))
+
+        return ' vs '.join(formatted_values)
+
+    summary = (
+        duplicate_data
         .groupby(['company', 'date'], as_index=False)
         .agg(
             qtd_linhas=('company', 'count'),
-            cidades=('location', lambda s: ' vs '.join(s.fillna('NaN').unique())),
+            cidades=(
+                'location',
+                lambda series: _format_unique_values(series)
+            ),
             demitidos=(
                 'total_laid_off',
-                lambda s: ' vs '
-                .join(
-                    s.fillna(-1)
-                    .astype(int)
-                    .astype(str)
-                    .unique()
-                )
-                .replace('-1', 'NaN')
+                lambda series: _format_unique_values(series)
             ),
             percentual=(
                 'percentage_laid_off',
-                lambda s: ' vs '
-                .join(
-                    s.round(4)
-                    .fillna(-1)
-                    .astype(str)
-                    .unique()
+                lambda series: _format_unique_values(
+                    series,
+                    decimals=4
                 )
-                .replace('-1.0', 'NaN')
             ),
-            setor=('industry', 'first')
+            setor=('industry', 'first'),
         )
     )
 
-    def _classificar(row: pd.Series) -> tuple[str, str]:
-
+    def _classify_group(row: pd.Series) -> tuple[str, str]:
+        """Classifica o grupo conforme as diferenças encontradas."""
         if ' vs ' in row['cidades']:
             return (
-                'Cidades diferentes (Manter)', 
+                'Cidades diferentes (Manter)',
                 '🟢 Cidades diferentes (Manter)'
             )
-        
-        if ' vs ' not in row['demitidos'] and ' vs ' not in row['percentual']:
+
+        if (
+            ' vs ' not in row['demitidos']
+            and ' vs ' not in row['percentual']
+        ):
             return (
-                'Duplicata exata (Remover)', 
+                'Duplicata exata (Remover)',
                 '🔴 Duplicata exata (Remover)'
             )
-        
+
         return (
-            'Mesma cidade / dados divergentes', 
+            'Mesma cidade / dados divergentes',
             '🟡 Mesma cidade / dados divergentes'
         )
 
-    classificacoes = resumo.apply(_classificar, axis=1)
-    resumo['diagnostico'] = [c[0] for c in classificacoes]
-    resumo['status'] = [c[1] for c in classificacoes]
+    classifications = summary.apply(
+        _classify_group,
+        axis=1
+    )
 
-    return resumo.sort_values('status').reset_index(drop=True)
+    summary['diagnostico'] = [
+        classification[0]
+        for classification in classifications
+    ]
+
+    summary['status'] = [
+        classification[1]
+        for classification in classifications
+    ]
+
+    return (
+        summary
+        .sort_values('status')
+        .reset_index(drop=True)
+    )
+
+
+# =====================================================================
+# AUDITORIA DE COMPLETUDE — TABELAS CRUZADAS
+# =====================================================================
+
+def cross_tabulation_sector_company(
+    df: pd.DataFrame,
+    column: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Analisa a completude das métricas de demissões por uma categoria.
+
+    Parâmetros:
+        df: DataFrame que contém as métricas de demissões e a categoria
+            utilizada para agrupar os registros.
+        column: Nome da coluna categórica usada no cruzamento, como
+            sector_scope, industry ou stage. Deve existir em df.columns.
+
+    Retorno:
+        Tupla contendo duas tabelas:
+        - Tabela de contagens absolutas, incluindo totais.
+        - Tabela de percentuais por categoria, sem margens de totais.
+
+    Observações:
+        A completude é avaliada pelas colunas total_laid_off e
+        percentage_laid_off. A tabela percentual contém valores textuais
+        formatados com o símbolo de porcentagem.
+    """
+    required_columns = [
+        column,
+        'total_laid_off',
+        'percentage_laid_off',
+    ]
+
+    missing_columns = [
+        name
+        for name in required_columns
+        if name not in df.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(
+            f'Colunas obrigatórias ausentes no DataFrame: {missing_columns}. '
+            f'Colunas disponíveis: {df.columns.tolist()}'
+        )
+
+    total_filled = df['total_laid_off'].notna()
+    percentage_filled = df['percentage_laid_off'].notna()
+
+    conditions = [
+        total_filled & percentage_filled,
+        total_filled & ~percentage_filled,
+        ~total_filled & percentage_filled,
+        ~total_filled & ~percentage_filled,
+    ]
+
+    categories = [
+        '1. Ambas preenchidas (Total + %)',
+        '2. Apenas total_laid_off (% nulo)',
+        '3. Apenas percentage_laid_off (Total nulo)',
+        '4. Ambas nulas (Sem métricas)',
+    ]
+
+    completeness_profile = pd.Series(
+        np.select(
+            conditions,
+            categories,
+            default='Outro'
+        ),
+        index=df.index,
+        name='Perfil de Completude',
+    )
+
+    absolute_table = pd.crosstab(
+        completeness_profile,
+        df[column],
+        margins=True,
+        margins_name='Total Geral',
+    )
+
+    percentage_table = pd.crosstab(
+        completeness_profile,
+        df[column],
+        normalize='columns',
+    ) * 100
+
+    percentage_table = (
+        percentage_table.round(2).astype(str) + '%'
+    )
+
+    return absolute_table, percentage_table
