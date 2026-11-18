@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 
@@ -21,48 +20,6 @@ def _data_missing_nan(df: pd.DataFrame) -> pd.Series:
     counts.index = counts.index + ' (Nulos/NaN)'
     return counts
 
-
-def _data_missing_numeric(df: pd.DataFrame) -> pd.Series:
-    """
-    Conta os valores numéricos iguais a zero.
-
-    Parâmetros:
-        df: DataFrame que será analisado.
-
-    Retorno:
-        Série com a quantidade de zeros numéricos por coluna.
-    """
-    numeric_columns = df.select_dtypes(include='number')
-    counts = (numeric_columns == 0).sum()
-    counts.index = counts.index + ' (Valores Zero)'
-    return counts
-
-
-def _data_missing_numeric_obj(df: pd.DataFrame) -> pd.Series:
-    """
-    Conta os valores iguais a '0' armazenados como texto.
-
-    Parâmetros:
-        df: DataFrame que será analisado.
-
-    Retorno:
-        Série com a quantidade de zeros textuais por coluna.
-    """
-    string_columns = df.select_dtypes(
-        include=['object', 'string']
-    ).columns
-
-    if len(string_columns) == 0:
-        return pd.Series(dtype='int64')
-
-    counts = df[string_columns].apply(
-        lambda series: (
-            series.dropna().astype(str).str.strip() == '0'
-        ).sum()
-    )
-
-    counts.index = counts.index + ' (Zeros em Texto)'
-    return counts
 
 
 def _data_missing_datetime(df: pd.DataFrame) -> pd.Series:
@@ -114,22 +71,6 @@ def _data_missing_empty_strings(df: pd.DataFrame) -> pd.Series:
     return counts
 
 
-def _data_negative_numeric(df: pd.DataFrame) -> pd.Series:
-    """
-    Conta valores numéricos negativos.
-
-    Parâmetros:
-        df: DataFrame que será analisado.
-
-    Retorno:
-        Série com a quantidade de valores negativos por coluna.
-    """
-    numeric_columns = df.select_dtypes(include='number')
-    counts = (numeric_columns < 0).sum()
-    counts.index = counts.index + ' (Valores Negativos)'
-    return counts
-
-
 def _data_duplicates(df: pd.DataFrame) -> pd.Series:
     """
     Conta linhas integralmente duplicadas.
@@ -177,65 +118,6 @@ def _data_partial_duplicates(df: pd.DataFrame) -> pd.Series:
     return pd.Series(dtype='int64')
 
 
-def _data_invalid_percentage(df: pd.DataFrame) -> pd.Series:
-    """
-    Conta percentuais de demissões fora do intervalo de 0 a 1.
-
-    Parâmetros:
-        df: DataFrame que será analisado.
-
-    Retorno:
-        Série com a quantidade de percentuais inválidos, caso existam.
-    """
-    column = 'percentage_laid_off'
-
-    if column in df.columns:
-        invalid_mask = (
-            (df[column] < 0) | (df[column] > 1.0)
-        )
-        invalid_count = invalid_mask.sum()
-
-        if invalid_count > 0:
-            return pd.Series(
-                [invalid_count],
-                index=['percentage_laid_off Fora de [0, 1]']
-            )
-
-    return pd.Series(dtype='int64')
-
-
-def _data_inconsistent_dates(df: pd.DataFrame) -> pd.Series:
-    """
-    Conta datas de eventos posteriores às respectivas datas de cadastro.
-
-    Parâmetros:
-        df: DataFrame que será analisado.
-
-    Retorno:
-        Série com a quantidade de datas inconsistentes, caso existam.
-    """
-    required_columns = ['date', 'date_added']
-
-    if not all(column in df.columns for column in required_columns):
-        return pd.Series(dtype='int64')
-
-    date_column = df['date']
-    registration_column = df['date_added']
-
-    if (
-        pd.api.types.is_datetime64_any_dtype(date_column)
-        and pd.api.types.is_datetime64_any_dtype(registration_column)
-    ):
-        invalid_mask = date_column > registration_column
-        invalid_count = invalid_mask.sum()
-
-        if invalid_count > 0:
-            return pd.Series(
-                [invalid_count],
-                index=['Data do Evento > Data de Cadastro']
-            )
-
-    return pd.Series(dtype='int64')
 
 
 # =====================================================================
@@ -244,28 +126,19 @@ def _data_inconsistent_dates(df: pd.DataFrame) -> pd.Series:
 
 _MISSING_CHECKS = {
     'nan': _data_missing_nan,
-    'numeric': _data_missing_numeric,
-    'numeric_obj': _data_missing_numeric_obj,
     'datetime': _data_missing_datetime,
     'empty_str': _data_missing_empty_strings,
-    'negatives': _data_negative_numeric,
     'duplicates': _data_duplicates,
     'partial_duplicates': _data_partial_duplicates,
-    'invalid_pct': _data_invalid_percentage,
-    'inconsistent_dates': _data_inconsistent_dates,
 }
 
 _DEFAULT_CHECKS = [
     'nan',
-    'numeric',
-    'numeric_obj',
     'datetime',
     'empty_str',
-    'negatives',
     'duplicates',
     'partial_duplicates',
-    'invalid_pct',
-    'inconsistent_dates',
+
 ]
 
 
