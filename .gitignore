@@ -21,3 +21,7 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+# Arquivos de resultados excel (evita arquivos binarios grandes no repositório)
+# em docs/tables/csv estão os arquivos csv, que são mais leves e podem ser convertidos para excel
+docs/tables/excel/

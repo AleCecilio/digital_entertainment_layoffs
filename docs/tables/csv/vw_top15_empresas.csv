@@ -1,0 +1,16 @@
+rank_position,company,subsegment,country,stage,layoff_rounds,total_laid_off,avg_percentage_cut,is_shutdown
+1,Meta,Consumer,United States,Post-IPO,9,35700,6.2,False
+2,Google,Consumer,United States,Post-IPO,11,13749,6.0,False
+3,Bytedance,Consumer,Indonesia,Unknown,6,5700,,False
+4,Twitter,Consumer,United States,Post-IPO,3,3940,30.0,False
+5,Snap,Consumer,United States,Post-IPO,5,2970,15.33,False
+6,Playtika,Consumer,Israel,Post-IPO,6,2440,13.2,False
+7,Spotify,Media,Sweden,Post-IPO,6,2370,8.33,False
+8,Electronic Arts,Consumer,United States,Post-IPO,5,2350,4.67,False
+9,TikTok,Consumer,United States,Acquired,7,2235,,False
+10,Epic Games,Consumer,United States,Unknown,2,1870,16.0,False
+11,Yahoo,Consumer,United States,Acquired,1,1600,20.0,False
+12,Netflix,Media,United States,Post-IPO,5,1505,3.33,False
+13,Juul,Consumer,United States,Unknown,2,1300,30.0,False
+14,Canva,Consumer,Australia,Unknown,2,1281,22.0,False
+15,Magic Leap,Consumer,United States,Series E,3,1268,50.0,False
