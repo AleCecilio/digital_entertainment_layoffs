@@ -54,26 +54,29 @@ def load_layoffs_to_postgres(
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV processado não encontrado: {csv_path}")
 
-    # 1. DDL com tipagem estrita para o schema do projeto
+    # DDL com tipagem estrita para o schema do projeto
     ddl = f"""
-    CREATE TABLE IF NOT EXISTS {table_name} (
-        company VARCHAR(150) NOT NULL,
-        location VARCHAR(150),
-        total_laid_off INTEGER,
-        date DATE NOT NULL,
-        percentage_laid_off NUMERIC(6, 4),
-        industry VARCHAR(80) NOT NULL,
-        sector_scope VARCHAR(30) NOT NULL,
-        source TEXT,
-        stage VARCHAR(60),
-        stage_group VARCHAR(40),
-        funds_raised NUMERIC(12, 2),
-        country VARCHAR(100),
-        date_added DATE,
-        year SMALLINT,
-        quarter VARCHAR(10),
-        year_quarter VARCHAR(10)
-    );
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            company VARCHAR(150) NOT NULL,
+            location VARCHAR(150),
+            total_laid_off INTEGER,
+            date DATE NOT NULL,
+            percentage_laid_off NUMERIC(6, 4),
+            industry VARCHAR(80) NOT NULL,
+            source TEXT,
+            stage VARCHAR(60),
+            funds_raised NUMERIC(12, 2),
+            country VARCHAR(100),
+            date_added DATE,
+            sector_scope VARCHAR(30) NOT NULL,
+            year SMALLINT,
+            quarter VARCHAR(10),
+            year_month VARCHAR(10),
+            reporting_lag_days INTEGER,
+            metric_completeness VARCHAR(30),
+            is_company_shutdown BOOLEAN,
+            layoff_scale VARCHAR(30)
+        );
     """
 
     with engine.begin() as conn:
