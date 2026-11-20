@@ -1,0 +1,70 @@
+country,location,total_events,unique_companies,total_laid_off,avg_laid_off,avg_percentage_cut,shutdown_events
+United States,SF Bay Area,150,69,69203,692.0,28.51,11
+United States,Los Angeles,28,17,5589,310.5,43.21,4
+United States,New York City,73,48,4088,99.7,21.2,4
+India,Bengaluru,21,11,3991,234.8,39.33,3
+Sweden,Stockholm,18,9,3570,255.0,17.4,0
+Israel,Tel Aviv,20,11,3199,199.9,21.65,1
+China,Shanghai,6,3,3130,782.5,16.33,0
+India,Mumbai,9,8,2860,357.5,44.75,1
+United States,Raleigh,2,1,1870,935.0,16.0,0
+United States,Miami,5,3,1358,339.5,52.67,1
+Australia,Sydney,4,3,1281,640.5,22.0,0
+United States,Chicago,5,3,1253,250.6,48.67,1
+United States,Seattle,10,6,1233,154.1,31.71,1
+Indonesia,Jakarta,3,2,950,475.0,30.0,0
+United States,Boston,8,4,911,130.1,14.33,0
+Ireland,Dublin,4,1,850,283.3,,0
+India,New Delhi,6,4,825,165.0,65.0,1
+United States,Austin,4,3,704,176.0,53.33,1
+United States,Indianapolis,2,1,650,325.0,,0
+India,Hyderabad,1,1,500,500.0,,0
+United Kingdom,London,11,11,444,74.0,25.2,0
+United States,Nashville,3,3,440,146.7,75.0,0
+Germany,Hamburg,1,1,400,400.0,,0
+Brazil,Sao Paulo,3,3,321,107.0,15.0,0
+China,Shenzen,4,3,315,157.5,,0
+Israel,Jerusalem,4,1,310,77.5,14.0,0
+United States,Santa Barbara,4,1,300,150.0,7.0,0
+Japan,Tokyo,5,4,285,95.0,40.0,0
+United States,Washington D.C.,9,5,262,52.4,9.6,0
+France,Paris,5,2,251,83.7,,0
+Singapore,Singapore,3,3,250,250.0,100.0,2
+Turkey,Istanbul,1,1,220,220.0,,0
+United States,Santa Fe,2,1,209,104.5,,0
+India,Gurugram,3,3,200,100.0,60.0,1
+China,Beijing,3,3,200,200.0,10.0,0
+Poland,Warsaw,2,2,200,200.0,15.0,0
+United States,Baton Rouge,1,1,200,200.0,,0
+India,Kolkata,1,1,125,125.0,40.0,0
+Canada,Toronto,3,2,122,40.7,15.67,0
+Poland,Wrocław,1,1,120,120.0,25.0,0
+Australia,Melbourne,2,1,110,55.0,22.0,0
+United States,Boulder,3,2,87,87.0,13.5,0
+United States,Lehi,1,1,81,81.0,6.0,0
+Germany,Berlin,5,3,75,37.5,15.75,0
+Brazil,Brasilia,1,1,60,60.0,20.0,0
+Canada,Montreal,1,1,55,55.0,,0
+Malaysia,Kuala Lumpur,1,1,50,50.0,12.0,0
+Luxembourg,Luxembourg,2,2,45,45.0,8.0,0
+Canada,Vancouver,1,1,23,23.0,38.0,0
+Canada,Waterloo,1,1,22,22.0,,0
+Denmark,Copenhagen,1,1,15,15.0,,0
+United States,Denver,1,1,5,5.0,,0
+United States,Minneapolis,1,1,5,5.0,20.0,0
+United Kingdom,Leeds,2,1,0,,,0
+Malaysia,Selangor,1,1,0,,100.0,1
+Netherlands,Amsterdam,1,1,0,,30.0,0
+United States,Bend,1,1,0,,100.0,1
+United States,New Hope,1,1,0,,,0
+United States,Providence,1,1,0,,15.0,0
+United Kingdom,Edinburgh,1,1,0,,100.0,1
+United States,San Diego,1,1,0,,100.0,1
+Switzerland,Zug,1,1,0,,,0
+South Korea,Seoul,1,1,0,,20.0,0
+Philippines,Manila,1,1,0,,,0
+Nigeria,Lagos,1,1,0,,19.0,0
+United States,St. Louis,1,1,0,,,0
+United States,Unknown,1,1,0,,60.0,0
+Finland,Helsinki,1,1,0,,,0
+United States,Dover,1,1,0,,,0

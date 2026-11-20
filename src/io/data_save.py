@@ -7,12 +7,17 @@ from src.io.data_load import get_project_root, get_db_config, get_postgres_engin
 
 def save_csv(df: pd.DataFrame, filename: str, folder: str = "processed", index: bool = False) -> str:
     """Salva o DataFrame em data/processed e retorna o caminho absoluto do arquivo."""
-    output_dir = get_project_root() / "data" / folder
+    root = get_project_root().resolve()
+    clean_folder = folder.replace("../data/", "").replace("data/", "").strip("/\\")
+    output_dir = (root / "data" / clean_folder).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     file_path = output_dir / filename
     df.to_csv(file_path, index=index, encoding="utf-8")
-    print(f"CSV salvo com sucesso em: {file_path}")
-    return str(file_path.resolve())
+
+    # Exibe apenas a partir de digital_entertainment_layoffs/
+    rel_path = file_path.relative_to(root.parent)
+    print(f"CSV salvo com sucesso em: {rel_path}")
+    return str(file_path)
 
 
 def save_excel(
@@ -22,7 +27,8 @@ def save_excel(
     index: bool = False,
 ) -> str:
     """Salva um DataFrame único ou um dicionário {'Aba': df} em Excel (.xlsx)."""
-    output_dir = get_project_root() / "data" / folder
+    clean_folder = folder.replace("../data/", "").replace("data/", "").strip("/\\")
+    output_dir = (get_project_root() / "data" / clean_folder).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     file_path = output_dir / filename
 
@@ -34,7 +40,7 @@ def save_excel(
             sheets.to_excel(writer, sheet_name="Dados", index=index)
 
     print(f"Planilha Excel salva com sucesso em: {file_path}")
-    return str(file_path.resolve())
+    return str(file_path)
 
 
 def load_layoffs_to_postgres(
@@ -50,7 +56,7 @@ def load_layoffs_to_postgres(
     if engine is None:
         engine = get_postgres_engine(ensure_db=True)
 
-    csv_path = get_project_root() / "data" / "processed" / csv_filename
+    csv_path = (get_project_root() / "data" / "processed" / csv_filename).resolve()
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV processado não encontrado: {csv_path}")
 
@@ -87,7 +93,7 @@ def load_layoffs_to_postgres(
 
         total_registros = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar()
 
-    # 2. Carga idempotente via psycopg2 COPY FROM STDIN
+    # Carga idempotente via psycopg2 COPY FROM STDIN
     if total_registros == 0:
         cfg = get_db_config()
         raw_conn = psycopg2.connect(
@@ -130,7 +136,7 @@ def load_layoffs_to_postgres(
             "Carga ignorada (use truncate_before_load=True para recarregar)."
         )
 
-    # 3. Auditoria pós-carga
+    # Auditoria pós-carga
     with engine.connect() as conn:
         total_final = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar()
         print(f"Total de registros confirmados em '{table_name}': {total_final:,}".replace(",", "."))
