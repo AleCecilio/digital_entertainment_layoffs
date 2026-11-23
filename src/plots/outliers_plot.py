@@ -7,7 +7,8 @@ import seaborn as sns
 def radar_chart_outliers(
     df_diagnostico: pd.DataFrame,
     cor_tema: str = '#4A4E69',
-    titulo: str = "Impacto de Outliers por Métrica"
+    titulo: str = "Impacto de Outliers por Métrica",
+    save_path: str | None = None
 ) -> None:
     """Gera gráfico de barras horizontais ranqueando a incidência de outliers por coluna."""
     if df_diagnostico.empty:
@@ -47,6 +48,12 @@ def radar_chart_outliers(
     ax.grid(axis='x', linestyle='--', alpha=0.4, color='#BDBDBD')
     sns.despine(top=True, right=True)
     plt.tight_layout()
+    if save_path:
+        plt.savefig(
+            save_path, 
+            dpi=130, 
+            bbox_inches='tight'
+        )
     plt.show()
 
 
@@ -58,7 +65,8 @@ def outlier_plot(
     cor_tema: str = '#4A4E69',
     titulo: str | None = None,
     usar_log: bool = False,
-    eh_percentual: bool = False
+    eh_percentual: bool = False,
+    save_path: str | None = None
 ) -> None:
     """Gera gráfico composto (Boxplot + Stripplot) evidenciando dispersão e fronteiras IQR."""
     serie = df_plot[coluna].dropna()
@@ -111,6 +119,13 @@ def outlier_plot(
     sns.despine(left=True)
     ax.yaxis.set_visible(False)
     plt.tight_layout()
+
+    if save_path:
+        plt.savefig(
+            save_path, 
+            dpi=130, 
+            bbox_inches='tight'
+        )
     plt.show()
 
 
@@ -121,7 +136,8 @@ def validation_scatter_plot(
     hue_col: str | None = 'sector_scope',
     titulo: str | None = None,
     usar_log_x: bool = True,
-    usar_log_y: bool = True
+    usar_log_y: bool = True,
+    save_path: str | None = None
 ) -> None:
     """Gera scatter plot para validação cruzada de extremos entre duas métricas numéricas."""
     df_valid = df.dropna(subset=[coluna_x, coluna_y])
@@ -159,4 +175,12 @@ def validation_scatter_plot(
     ax.set_ylabel(f"{nome_y} {'(Log)' if usar_log_y else ''}", fontsize=10, fontweight='bold', color='#4A4E69')
     sns.despine(top=True, right=True)
     plt.tight_layout()
+
+    if save_path:
+        plt.savefig(
+            save_path, 
+            dpi=130, 
+            bbox_inches='tight'
+        )
+
     plt.show()
